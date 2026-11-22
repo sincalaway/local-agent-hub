@@ -1,4 +1,6 @@
 import unittest
+import copy
+from unittest.mock import patch
 
 import main
 
@@ -21,6 +23,30 @@ class RouterTests(unittest.TestCase):
         merged = main._merge_config({"auto_start": False})
         self.assertFalse(merged["auto_start"])
         self.assertEqual(set(merged["backends"].keys()), {"llama", "strata", "airllm"})
+
+    def test_not_needed_api_key_is_not_sent_to_backend(self):
+        config = copy.deepcopy(main.CONFIG)
+        config["backends"]["strata"].update({
+            "base_url": "http://127.0.0.1:8080/v1",
+            "api_key": "not-needed",
+            "model": "test-model",
+        })
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            def read(self):
+                return b'{"choices":[{"message":{"content":"ok"}}]}'
+
+        with patch.object(main, "CONFIG", config), patch.object(main, "urlopen", return_value=FakeResponse()) as mocked:
+            self.assertEqual(main._call_backend("strata", [{"role": "user", "content": "hi"}], 0.7, 64), "ok")
+
+        request = mocked.call_args.args[0]
+        self.assertFalse(any(name.lower() == "authorization" for name, _value in request.header_items()))
 
 
 if __name__ == "__main__":

@@ -113,6 +113,13 @@ def _origin(url: str) -> str:
     return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
 
 
+def _authorization_headers(backend: dict[str, Any]) -> dict[str, str]:
+    api_key = str(backend.get("api_key") or "").strip()
+    if not api_key or api_key.lower() == "not-needed":
+        return {}
+    return {"Authorization": f"Bearer {api_key}"}
+
+
 def _health_url(backend: dict[str, Any]) -> str:
     path = str(backend.get("health_path") or "/health")
     if path.startswith("http://") or path.startswith("https://"):
@@ -124,9 +131,7 @@ def health_check(name: str, timeout: float = 2.0) -> tuple[bool, str]:
     backend = CONFIG["backends"][name]
     try:
         url = _health_url(backend)
-        headers = {}
-        if backend.get("api_key") and backend["api_key"] != "not-needed":
-            headers["Authorization"] = f"Bearer {backend['api_key']}"
+        headers = _authorization_headers(backend)
         req = Request(url, headers=headers, method="GET")
         with urlopen(req, timeout=timeout) as response:
             if response.status < 500:
@@ -161,7 +166,7 @@ class BackendManager:
             "label": config.get("label", name),
             "enabled": bool(config.get("enabled", True)),
             "healthy": healthy,
-            "detail": detail if healthy else ("未连接" if "refused" in detail.lower() or "urlopen" in detail.lower() else detail[:160]),
+            "detail": detail[:160],
             "managed_by_app": owned,
             "pid": proc.pid if owned and proc else None,
             "last_used": last_used,
@@ -383,9 +388,7 @@ def _call_backend(name: str, messages: list[dict[str, Any]], temperature: float,
         "max_tokens": max_tokens,
         "stream": False,
     }
-    headers = {"Content-Type": "application/json"}
-    if backend.get("api_key"):
-        headers["Authorization"] = f"Bearer {backend['api_key']}"
+    headers = {"Content-Type": "application/json", **_authorization_headers(backend)}
     request = Request(_completion_url(backend["base_url"]), data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
     timeout = max(10, min(int(CONFIG.get("request_timeout_seconds", 600)), 3600))
     try:

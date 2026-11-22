@@ -125,6 +125,7 @@ function renderStatus(){
   const list=document.getElementById('sidebarBackends');list.replaceChildren();
   BACKENDS.forEach(meta=>{
     const s=statusData.backends[meta.id];const row=document.createElement('div');row.className='sidebar-backend';
+    row.title=`${meta.name}：${s?.healthy?'在线':(s?.detail||'未连接')}${s?.model?` · ${s.model}`:''}`;
     const dot=document.createElement('span');dot.className='live-dot'+(s?.healthy?' online':'');
     const name=document.createElement('span');name.className='backend-name';name.textContent=meta.name;
     const state=document.createElement('span');state.className='backend-state';state.textContent=s?.healthy?'在线':(s?.enabled?'待机':'已禁用');
@@ -174,7 +175,7 @@ function renderSettings(){
 function updateSettingStatusLabels(){
   document.querySelectorAll('.backend-setting-card').forEach(card=>{
     const state=statusData?.backends?.[card.dataset.backend];const label=card.querySelector('[data-status]');
-    if(label)label.textContent=state?.healthy?'在线':(state?.enabled===false?'已禁用':'未连接');
+    if(label){label.textContent=state?.healthy?'在线':(state?.enabled===false?'已禁用':'未连接');label.title=state?.healthy?'服务可连接':(state?.detail||'尚未连接');}
   });
 }
 async function controlBackend(name,action,card){
