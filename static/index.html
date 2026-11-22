@@ -57,7 +57,7 @@
             <textarea id="messageInput" rows="1" placeholder="给本地 Agent 发消息…" aria-label="消息内容"></textarea>
             <div class="composer-tools">
               <div class="composer-selects">
-                <label class="select-wrap"><span class="select-dot"></span><select id="modelSelect" aria-label="选择模型"><option value="auto">自动路由</option><option value="llama">llama.cpp</option><option value="strata">Strata</option><option value="airllm">AirLLM</option></select><span class="select-chevron">⌄</span></label>
+                <label class="select-wrap"><span class="select-dot"></span><select id="modelSelect" aria-label="选择模型"><option value="auto">自动路由</option><option value="llama">llama.cpp</option><option value="strata">Strata</option><option value="airllm">AirLLM</option><option value="custom">自定义本地模型</option></select><span class="select-chevron">⌄</span></label>
                 <label class="select-wrap task-select"><span class="task-icon">⌘</span><select id="taskHint" aria-label="任务类型"><option value="">智能识别任务</option><option value="日常对话">日常对话</option><option value="代码/编程">代码 / 编程</option><option value="复杂推理/系统设计">复杂推理 / 系统设计</option><option value="超大模型/批量任务">超大模型 / 批量任务</option></select><span class="select-chevron">⌄</span></label>
               </div>
               <button class="send-button" id="sendButton" aria-label="发送消息" title="发送消息"><span>↑</span></button>
@@ -71,10 +71,10 @@
 
   <div class="modal-backdrop" id="settingsModal" aria-hidden="true">
     <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <header class="modal-header"><div><div class="eyebrow">CONFIGURE YOUR LOCAL STACK</div><h2 id="settingsTitle">后端与 API 设置</h2><p>填写你电脑上的模型服务地址与启动命令。空启动命令表示只连接已运行的服务。</p></div><button class="icon-button modal-close" id="closeSettings" aria-label="关闭设置">×</button></header>
+      <header class="modal-header"><div><div class="eyebrow">CONFIGURE YOUR LOCAL STACK</div><h2 id="settingsTitle">后端与 API 设置</h2><p>配置现有后端，或添加本机 OpenAI 兼容模型服务；可填写 API Key 并读取模型列表。</p></div><button class="icon-button modal-close" id="closeSettings" aria-label="关闭设置">×</button></header>
       <div class="settings-body">
         <div class="general-settings" id="generalSettings"></div>
-        <div class="settings-section-heading"><div><h3>模型后端</h3><p>启动命令为 JSON 字符串数组，避免空格和引号造成解析问题。</p></div><span class="settings-badge">3 PROVIDERS</span></div>
+        <div class="settings-section-heading"><div><h3>模型后端</h3><p>自定义本地模型支持 API Key 和从服务读取模型列表。</p></div><span class="settings-badge">4 PROVIDERS</span></div>
         <div id="backendSettings" class="backend-settings"></div>
         <div class="settings-footer-note"><span>ⓘ</span> 仅当进程由本应用启动时，自动闲置关闭才会结束它；已由你手动启动的服务不会被关闭。</div>
       </div>

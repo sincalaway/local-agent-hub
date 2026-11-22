@@ -35,6 +35,16 @@
       "health_path": "/v1/models",
       "start_cmd": [],
       "idle_shutdown_minutes": 10
+    },
+    "custom": {
+      "label": "自定义本地模型",
+      "enabled": false,
+      "base_url": "http://127.0.0.1:1234/v1",
+      "api_key": "",
+      "model": "",
+      "health_path": "/v1/models",
+      "start_cmd": [],
+      "idle_shutdown_minutes": 0
     }
   }
 }

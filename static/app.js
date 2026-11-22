@@ -1,7 +1,8 @@
 const BACKENDS = [
   {id:'llama', name:'llama.cpp', symbol:'L', subtitle:'主力 · 日常对话'},
   {id:'strata', name:'Strata', symbol:'S', subtitle:'代码 · 复杂推理'},
-  {id:'airllm', name:'AirLLM', symbol:'A', subtitle:'超大模型 · 慢速批处理'}
+  {id:'airllm', name:'AirLLM', symbol:'A', subtitle:'超大模型 · 慢速批处理'},
+  {id:'custom', name:'自定义本地模型', symbol:'+', subtitle:'OpenAI 兼容 · 自行配置'}
 ];
 const STORE_KEY = 'local-agent-hub.conversations.v1';
 let config = null;
@@ -157,12 +158,15 @@ function renderSettings(){
     const card=document.createElement('section');card.className='backend-setting-card';card.dataset.backend=meta.id;
     const status=statusData?.backends?.[meta.id];
     const command=JSON.stringify(b.start_cmd||[],null,2);
+    const modelField=meta.id==='custom'
+      ? `<div class="model-control"><input data-field="model" value="${esc(b.model)}" placeholder="例如 qwen2.5:7b"><button type="button" class="mini-action" data-action="models">读取模型</button></div><select class="model-list" aria-label="从本地服务选择模型"><option value="">读取模型列表后选择</option></select><span class="help-text">输入模型标识，或从本地服务返回的列表中选择。</span>`
+      : `<input data-field="model" value="${esc(b.model)}">`;
     card.innerHTML=`
       <div class="backend-setting-head"><div class="backend-logo ${meta.id}">${meta.symbol}</div><div class="backend-heading"><strong>${meta.name}</strong><small>${meta.subtitle}</small></div><span class="status-text" data-status>${status?.healthy?'在线':(status?.enabled===false?'已禁用':'未连接')}</span><div class="backend-actions"><button class="mini-action" data-action="start">启动</button><button class="mini-action stop" data-action="stop">停止</button><label class="toggle-row" title="启用此后端"><input data-field="enabled" type="checkbox" ${b.enabled?'checked':''}></label></div></div>
       <div class="backend-fields">
         <div class="backend-field"><label>API 兼容地址</label><input data-field="base_url" value="${esc(b.base_url)}" placeholder="http://127.0.0.1:8081/v1"></div>
-        <div class="backend-field"><label>模型标识</label><input data-field="model" value="${esc(b.model)}"></div>
-        <div class="backend-field"><label>API Key</label><input data-field="api_key" value="${esc(b.api_key)}" autocomplete="off"></div>
+        <div class="backend-field"><label>模型标识</label>${modelField}</div>
+        <div class="backend-field"><label>API Key（服务要求时填写）</label><input data-field="api_key" type="password" value="${esc(b.api_key)}" autocomplete="off" placeholder="留空表示不使用密钥"></div>
         <div class="backend-field"><label>健康检查路径</label><input data-field="health_path" value="${esc(b.health_path)}" placeholder="/health"></div>
         <div class="backend-field wide"><label>启动命令（JSON 数组）</label><textarea data-field="start_cmd" spellcheck="false" placeholder='["llama-server", "-m", "./models/model.gguf", "--port", "8081"]'>${esc(command)}</textarea><span class="help-text">例如 llama.cpp：["llama-server", "-m", "./models/qwen3-8b-q4_k_m.gguf", "-ngl", "99", "-c", "16384", "--host", "127.0.0.1", "--port", "8081", "--api-key", "sk-llama"]。留空则不会由应用启动。</span></div>
         <div class="backend-field"><label>自动闲置关闭（分钟，0 表示不关闭）</label><input data-field="idle_shutdown_minutes" type="number" min="0" max="1440" value="${Number(b.idle_shutdown_minutes)||0}"></div>
@@ -170,6 +174,10 @@ function renderSettings(){
     area.append(card);
     card.querySelector('[data-action="start"]').addEventListener('click',()=>controlBackend(meta.id,'start',card));
     card.querySelector('[data-action="stop"]').addEventListener('click',()=>controlBackend(meta.id,'stop',card));
+    card.querySelector('[data-action="models"]')?.addEventListener('click',()=>loadBackendModels(meta.id,card));
+    card.querySelector('.model-list')?.addEventListener('change',event=>{
+      if(event.target.value)card.querySelector('[data-field="model"]').value=event.target.value;
+    });
   });
 }
 function updateSettingStatusLabels(){
@@ -186,6 +194,19 @@ async function controlBackend(name,action,card){
     if(d.status&&statusData)statusData.backends[name]=d.status;
     await refreshStatus();label.textContent=d.status?.healthy?'在线':(d.message||'未连接');toast(d.message);
   }catch(e){toast(`操作失败：${e.message}`)}finally{button.disabled=false;}
+}
+async function loadBackendModels(name,card){
+  const button=card.querySelector('[data-action="models"]');const picker=card.querySelector('.model-list');
+  button.disabled=true;button.textContent='读取中…';
+  try{
+    const response=await fetch(`/api/backends/${name}/models`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_url:card.querySelector('[data-field="base_url"]').value,api_key:card.querySelector('[data-field="api_key"]').value})});
+    const result=await response.json();if(!response.ok)throw new Error(result.detail||'读取模型列表失败');
+    const current=card.querySelector('[data-field="model"]').value;picker.replaceChildren(new Option('选择一个模型…',''));
+    result.models.forEach(model=>picker.add(new Option(model,model)));
+    if(result.models.includes(current))picker.value=current;
+    else if(!current&&result.models.length===1){picker.value=result.models[0];card.querySelector('[data-field="model"]').value=result.models[0];}
+    toast(`已读取 ${result.models.length} 个模型`);
+  }catch(error){toast(error.message)}finally{button.disabled=false;button.textContent='读取模型';}
 }
 function collectSettings(){
   const next=structuredClone(config);

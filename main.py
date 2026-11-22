@@ -67,10 +67,20 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "start_cmd": [],
             "idle_shutdown_minutes": 10,
         },
+        "custom": {
+            "label": "自定义本地模型",
+            "enabled": False,
+            "base_url": "http://127.0.0.1:1234/v1",
+            "api_key": "",
+            "model": "",
+            "health_path": "/v1/models",
+            "start_cmd": [],
+            "idle_shutdown_minutes": 0,
+        },
     },
 }
 
-BACKEND_KEYS = ("llama", "strata", "airllm")
+BACKEND_KEYS = ("llama", "strata", "airllm", "custom")
 
 
 def _merge_config(user_config: dict[str, Any]) -> dict[str, Any]:
@@ -334,6 +344,54 @@ def get_status() -> dict[str, Any]:
         "backends": {name: MANAGER.status(name) for name in BACKEND_KEYS},
         "api": {"base_url": "/v1", "model_aliases": ["auto", *BACKEND_KEYS]},
     }
+
+
+def _fetch_models(base_url: str, api_key: str) -> list[str]:
+    try:
+        _origin(base_url)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    headers = _authorization_headers({"api_key": api_key})
+    request = Request(base_url.rstrip("/") + "/models", headers=headers, method="GET")
+    try:
+        with urlopen(request, timeout=12) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as e:
+        raise HTTPException(502, f"模型列表读取失败：服务返回 HTTP {e.code}") from e
+    except (URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
+        raise HTTPException(502, f"无法读取模型列表：{e}") from e
+    entries = body.get("data", body.get("models", [])) if isinstance(body, dict) else []
+    if not isinstance(entries, list):
+        raise HTTPException(502, "服务返回的模型列表格式无效")
+    model_ids: list[str] = []
+    for entry in entries:
+        model_id = entry if isinstance(entry, str) else entry.get("id") if isinstance(entry, dict) else None
+        if isinstance(model_id, str) and model_id.strip():
+            model_id = model_id.strip()[:200]
+            if model_id not in model_ids:
+                model_ids.append(model_id)
+        if len(model_ids) >= 200:
+            break
+    if not model_ids:
+        raise HTTPException(404, "没有读取到模型；你仍可手动填写模型标识")
+    return model_ids
+
+
+@app.post("/api/backends/{name}/models")
+async def list_backend_models(name: str, request: FastAPIRequest) -> dict[str, Any]:
+    if name not in BACKEND_KEYS:
+        raise HTTPException(404, "未知后端")
+    try:
+        payload = await request.json()
+    except Exception as e:
+        raise HTTPException(400, "请求必须是 JSON") from e
+    if not isinstance(payload, dict):
+        raise HTTPException(400, "请求格式无效")
+    backend = CONFIG["backends"][name]
+    base_url = str(payload.get("base_url", backend["base_url"])).strip().rstrip("/")[:1000]
+    api_key = str(payload.get("api_key", backend.get("api_key", "")))[:500]
+    models = await run_in_threadpool(_fetch_models, base_url, api_key)
+    return {"models": models}
 
 
 @app.post("/api/backends/{name}/start")
