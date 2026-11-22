@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f6f8fc" />
+  <title>本地 Agent Hub</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-row">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="brand-copy"><strong>Local Agent</strong><small>本地模型工作台</small></div>
+        <button class="icon-button sidebar-close" id="sidebarClose" title="关闭侧栏" aria-label="关闭侧栏">×</button>
+      </div>
+      <button class="new-chat-button" id="newChat"><span class="plus">＋</span> 新建对话 <kbd>Ctrl K</kbd></button>
+      <div class="side-section-label">最近对话</div>
+      <nav id="conversationList" class="conversation-list" aria-label="最近对话"></nav>
+      <div class="sidebar-spacer"></div>
+      <div class="backend-card">
+        <div class="backend-card-head"><span class="live-dot" id="overallDot"></span><span>本地模型服务</span><button id="refreshStatus" class="refresh-button" title="刷新状态">↻</button></div>
+        <div id="sidebarBackends" class="sidebar-backends"></div>
+      </div>
+      <div class="sidebar-bottom">
+        <button class="side-link" id="openSettings"><span class="settings-glyph">⚙</span> 后端与 API 设置</button>
+        <div class="local-note"><span class="lock-glyph">▣</span> 对话默认保存在此浏览器</div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left"><button class="icon-button menu-button" id="menuButton" aria-label="打开侧栏">☰</button><div><div class="eyebrow">LOCAL INFERENCE · ROUTER</div><div class="topbar-title">本地 Agent <span class="title-divider">/</span> <span id="chatTitle">新对话</span></div></div></div>
+        <div class="topbar-actions"><div class="connection-pill"><span class="live-dot" id="topDot"></span><span id="connectionText">正在检查服务</span></div><button class="top-settings" id="topSettings"><span>⚙</span><span>设置</span></button></div>
+      </header>
+
+      <section class="chat-scroll" id="chatScroll">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="core-dot"></span></div>
+          <div class="welcome-kicker">YOUR PRIVATE AI WORKSPACE</div>
+          <h1>你好，开始一段<br><span>本地对话。</span></h1>
+          <p class="welcome-description">请求在你的电脑上处理。日常任务优先交给 llama.cpp，代码与复杂任务可切到 Strata；AirLLM 仅在明确需要时使用。</p>
+          <div class="suggestion-grid">
+            <button class="suggestion-card" data-prompt="帮我把一个复杂任务拆解成清晰的步骤，并列出每一步的验收标准。"><span class="suggestion-icon icon-plan">✳</span><span><b>整理复杂任务</b><small>拆解目标，形成可执行计划</small></span><span class="card-arrow">↗</span></button>
+            <button class="suggestion-card" data-prompt="请用 Python 写一个函数，读取 CSV 并按指定列去重；补充类型标注和测试用例。"><span class="suggestion-icon icon-code">⌘</span><span><b>编写一段代码</b><small>生成实现、解释与测试思路</small></span><span class="card-arrow">↗</span></button>
+            <button class="suggestion-card" data-prompt="请用通俗语言解释什么是检索增强生成（RAG），并举一个小例子。"><span class="suggestion-icon icon-explain">◌</span><span><b>解释一个概念</b><small>从简单例子理解新知识</small></span><span class="card-arrow">↗</span></button>
+            <button class="suggestion-card" data-prompt="帮我检查这份方案的风险点，并按严重程度给出改进建议："><span class="suggestion-icon icon-review">⌕</span><span><b>审阅一份方案</b><small>找出风险、遗漏与改进空间</small></span><span class="card-arrow">↗</span></button>
+          </div>
+        </div>
+        <div class="messages" id="messages" aria-live="polite"></div>
+      </section>
+
+      <footer class="composer-area">
+        <div class="composer-wrap">
+          <div class="composer-box">
+            <textarea id="messageInput" rows="1" placeholder="给本地 Agent 发消息…" aria-label="消息内容"></textarea>
+            <div class="composer-tools">
+              <div class="composer-selects">
+                <label class="select-wrap"><span class="select-dot"></span><select id="modelSelect" aria-label="选择模型"><option value="auto">自动路由</option><option value="llama">llama.cpp</option><option value="strata">Strata</option><option value="airllm">AirLLM</option></select><span class="select-chevron">⌄</span></label>
+                <label class="select-wrap task-select"><span class="task-icon">⌘</span><select id="taskHint" aria-label="任务类型"><option value="">智能识别任务</option><option value="日常对话">日常对话</option><option value="代码/编程">代码 / 编程</option><option value="复杂推理/系统设计">复杂推理 / 系统设计</option><option value="超大模型/批量任务">超大模型 / 批量任务</option></select><span class="select-chevron">⌄</span></label>
+              </div>
+              <button class="send-button" id="sendButton" aria-label="发送消息" title="发送消息"><span>↑</span></button>
+            </div>
+          </div>
+          <div class="composer-foot"><span>Enter 发送 <i>·</i> Shift + Enter 换行</span><span><span class="privacy-dot"></span> 请求仅发送到已配置的模型端点</span></div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="settingsModal" aria-hidden="true">
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header class="modal-header"><div><div class="eyebrow">CONFIGURE YOUR LOCAL STACK</div><h2 id="settingsTitle">后端与 API 设置</h2><p>填写你电脑上的模型服务地址与启动命令。空启动命令表示只连接已运行的服务。</p></div><button class="icon-button modal-close" id="closeSettings" aria-label="关闭设置">×</button></header>
+      <div class="settings-body">
+        <div class="general-settings" id="generalSettings"></div>
+        <div class="settings-section-heading"><div><h3>模型后端</h3><p>启动命令为 JSON 字符串数组，避免空格和引号造成解析问题。</p></div><span class="settings-badge">3 PROVIDERS</span></div>
+        <div id="backendSettings" class="backend-settings"></div>
+        <div class="settings-footer-note"><span>ⓘ</span> 仅当进程由本应用启动时，自动闲置关闭才会结束它；已由你手动启动的服务不会被关闭。</div>
+      </div>
+      <footer class="modal-footer"><span id="saveMessage" class="save-message"></span><div><button class="button-quiet" id="cancelSettings">取消</button><button class="button-primary" id="saveSettings">保存设置</button></div></footer>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

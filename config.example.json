@@ -1,0 +1,40 @@
+{
+  "auto_start": true,
+  "proxy_api_key": "sk-local-agent",
+  "system_prompt": "你是一名可靠、清晰的本地 AI 助手。请直接回答问题；信息不足时明确说明。",
+  "fallback_order": ["strata"],
+  "startup_timeout_seconds": 120,
+  "request_timeout_seconds": 600,
+  "backends": {
+    "llama": {
+      "label": "llama.cpp",
+      "enabled": true,
+      "base_url": "http://127.0.0.1:8081/v1",
+      "api_key": "sk-llama",
+      "model": "qwen3-8b",
+      "health_path": "/health",
+      "start_cmd": [],
+      "idle_shutdown_minutes": 0
+    },
+    "strata": {
+      "label": "Strata",
+      "enabled": true,
+      "base_url": "http://127.0.0.1:8080/v1",
+      "api_key": "not-needed",
+      "model": "qwen3.8-flash-next-coder",
+      "health_path": "/v1/models",
+      "start_cmd": [],
+      "idle_shutdown_minutes": 5
+    },
+    "airllm": {
+      "label": "AirLLM",
+      "enabled": true,
+      "base_url": "http://127.0.0.1:8000/v1",
+      "api_key": "not-needed",
+      "model": "meta-llama/Llama-3.1-70B-Instruct",
+      "health_path": "/v1/models",
+      "start_cmd": [],
+      "idle_shutdown_minutes": 10
+    }
+  }
+}
