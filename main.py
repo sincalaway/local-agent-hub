@@ -23,8 +23,10 @@ from starlette.concurrency import run_in_threadpool
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
-CONFIG_PATH = ROOT / "config.json"
-LOG_DIR = ROOT / "logs"
+DATA_DIR = Path(os.environ.get("LOCAL_AGENT_HUB_DATA_DIR", str(ROOT))).expanduser().resolve()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+CONFIG_PATH = DATA_DIR / "config.json"
+LOG_DIR = DATA_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 DEFAULT_CONFIG: dict[str, Any] = {
