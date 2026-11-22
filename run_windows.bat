@@ -1,16 +1,17 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist ".venv\Scripts\python.exe" (
+if not defined LOCAL_AGENT_HUB_VENV set "LOCAL_AGENT_HUB_VENV=%~dp0.venv"
+if not exist "%LOCAL_AGENT_HUB_VENV%\Scripts\python.exe" (
   echo [1/2] Creating local Python environment...
-  py -3 -m venv .venv 2>nul || python -m venv .venv
+  py -3 -m venv "%LOCAL_AGENT_HUB_VENV%" 2>nul || python -m venv "%LOCAL_AGENT_HUB_VENV%"
   if errorlevel 1 (
     echo Could not create a virtual environment. Install Python 3.10+ and try again.
     pause
     exit /b 1
   )
 )
-call ".venv\Scripts\activate.bat"
+call "%LOCAL_AGENT_HUB_VENV%\Scripts\activate.bat"
 echo [2/2] Checking application dependencies...
 python -m pip install --disable-pip-version-check -r requirements.txt
 if errorlevel 1 (
