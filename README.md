@@ -11,6 +11,14 @@
 
 首次启动会创建 Python 虚拟环境并安装应用依赖。随后在浏览器打开 `http://127.0.0.1:7860`。
 
+## Windows 安装包
+
+运行 `Local-Agent-Hub-Setup-1.0.0.exe` 并按提示安装。需要 Windows 10/11 与 Python 3.10 或更新版本；首次启动会联网创建虚拟环境并安装依赖。安装程序不会附带模型权重或模型后端。
+
+程序安装在当前用户的 `%LOCALAPPDATA%\Programs\Local Agent Hub`；设置和日志保存在 `%LOCALAPPDATA%\Local Agent Hub`，卸载程序会保留这些用户数据。源码构建需要 NSIS 3：Windows 运行 `powershell -ExecutionPolicy Bypass -File .\build_installer.ps1`，Linux/macOS 运行 `bash ./build_installer.sh`。可选地把版本号作为脚本参数传入。
+
+
+
 ## 接入模型
 
 本应用是路由与聊天界面，不会下载或附带模型权重，也不会代替安装 llama.cpp、Strata 或 AirLLM。点击界面左下角“后端与 API 设置”，为本机已安装的服务填写 API 地址、模型标识、健康检查路径和启动命令。启动命令必须是 JSON 字符串数组；留空时应用只连接已经运行的服务。
